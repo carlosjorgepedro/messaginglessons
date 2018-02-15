@@ -33,7 +33,7 @@ namespace RabbitMq.Fanout.Receiver.Accounting
                 channel.BasicAck(args.DeliveryTag, false);
             };
 
-            channel.BasicConsume("pt.southbank.queues.accounting", false, eventingConsumer);
+            channel.BasicConsume("pt.southbank.queue.headers", false, eventingConsumer);
         }
 
 

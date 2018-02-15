@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -15,11 +16,72 @@ namespace RabbitMqApp1
             var channel = connection.CreateModel();
             Console.WriteLine($"Channel open: {channel.IsOpen }");
 
-            SetupDirectExchangeWithRoutingKey(connection, channel);
+            SetHeadersExchange(connection, channel);
 
             Console.WriteLine(string.Concat("Channel is closed: ", channel.IsClosed));
             Console.WriteLine("Main done...");
             Console.ReadKey();
+        }
+
+        static void SetHeadersExchange(IConnection connection, IModel channel)
+        {
+            const string queue = "pt.southbank.queue.headers";
+            const string exchange = "pt.southbank.exchange.headers";
+
+            channel.ExchangeDeclare(exchange, ExchangeType.Headers, true, false, null);
+            channel.QueueDeclare(queue, true, false, false, null);
+            var headersMatchAll = new Dictionary<string, object>
+            {
+                {"x-match", "all"},
+                {"category", "animal"},
+                {"type", "mammal"}
+            };
+
+            channel.QueueBind(queue, exchange, string.Empty, headersMatchAll);
+
+            var headersMatchAny = new Dictionary<string, object>
+            {
+                {"x-match", "any"},
+                {"category", "plant"},
+                {"type", "tree"}
+            };
+            channel.QueueBind(queue, exchange, string.Empty, headersMatchAny);
+
+            var address = new PublicationAddress(ExchangeType.Headers, exchange, "");
+
+            var properties = channel.CreateBasicProperties();
+            var messageHeaders = new Dictionary<string, object>
+            {
+                {"category", "animal"},
+                {"type", "insect"}
+            };
+            properties.Headers = messageHeaders;
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of insects"));
+
+            properties.Headers["category"] = "animal";
+            properties.Headers["type"] = "mammal";
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of mammals"));
+
+            properties.Headers["category"] = "animal";
+            properties.Headers.Remove("type");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of animals"));
+
+            properties.Headers["category"] = "fungi";
+            properties.Headers["type"] = "champignon";
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of champignons"));
+
+            properties.Headers["category"] = "sad";
+            properties.Headers["type"] = "tree";
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of sad trees"));
+
+            properties.Headers["category"] = "animal";
+            properties.Headers["type"] = "mammal";
+            properties.Headers["color"] = "pink";
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("Hello from the world of pink mammals"));
+
+            channel.Close();
+            connection.Close();
+
         }
 
 
