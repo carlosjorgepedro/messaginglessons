@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
-namespace ConsoleApp1
+namespace RabbitMqApp1
 {
     class Program
     {
@@ -15,12 +15,57 @@ namespace ConsoleApp1
             var channel = connection.CreateModel();
             Console.WriteLine($"Channel open: {channel.IsOpen }");
 
-            SetupFanoutExchange(connection, channel);
+            SetupRpc(channel);
 
             Console.WriteLine(string.Concat("Channel is closed: ", channel.IsClosed));
             Console.WriteLine("Main done...");
             Console.ReadKey();
         }
+
+
+
+        static void SetupRpc(IModel channel)
+        {
+            channel.QueueDeclare("pt.southbank.queues.rpc", true, false, false, null);
+            SendRpcMessagesBankAndForth(channel);
+        }
+
+
+        static void SendRpcMessagesBankAndForth(IModel channel)
+        {
+            var rpcResponseQueue = channel.QueueDeclare().QueueName;
+            var correlationId = $"{Guid.NewGuid()}";
+
+            var properties = channel.CreateBasicProperties();
+            properties.ReplyTo = rpcResponseQueue;
+            properties.CorrelationId = correlationId;
+            Console.WriteLine("Enter your message and press Enter.");
+            var message = Console.ReadLine();
+            var messageBytes = Encoding.UTF8.GetBytes(message);
+            channel.BasicPublish(string.Empty, "pt.southbank.queues.rpc", properties, messageBytes);
+            var rpcConsumer = new EventingBasicConsumer(channel);
+            rpcConsumer.Received += (sender, basicDeliveryEventArgs) =>
+            {
+
+                var responseFromConsumer = null as string;
+                var props = basicDeliveryEventArgs.BasicProperties;
+                if (props != null && props.CorrelationId == correlationId)
+                {
+                    var response = Encoding.UTF8.GetString(basicDeliveryEventArgs.Body);
+                    responseFromConsumer = response;
+                }
+                channel.BasicAck(basicDeliveryEventArgs.DeliveryTag, false);
+                Console.WriteLine("Response: {0}", responseFromConsumer);
+                Console.WriteLine("Enter your message and press Enter.");
+                message = Console.ReadLine();
+                messageBytes = Encoding.UTF8.GetBytes(message);
+                channel.BasicPublish("", "pt.southbank.queues.rpc", properties, messageBytes);
+            };
+            channel.BasicConsume(rpcResponseQueue, false, rpcConsumer);
+        }
+
+
+
 
 
         static void SetupFanoutExchange(IConnection connection, IModel channel)
@@ -32,8 +77,8 @@ namespace ConsoleApp1
             channel.QueueDeclare("pt.southbank.queues.accounting", true, false, false, null);
             channel.QueueDeclare("pt.southbank.queues.management", true, false, false, null);
             //bind queues to exchange
-            channel.QueueBind("pt.southbank.queues.accounting","pt.southbank.fanout.exchange", string.Empty, null);
-            channel.QueueBind("pt.southbank.queues.management","pt.southbank.fanout.exchange", string.Empty, null);
+            channel.QueueBind("pt.southbank.queues.accounting", "pt.southbank.fanout.exchange", string.Empty, null);
+            channel.QueueBind("pt.southbank.queues.management", "pt.southbank.fanout.exchange", string.Empty, null);
 
             var properties = channel.CreateBasicProperties();
             properties.Persistent = true;

@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMq.Fanout.Receiver.Ac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMq.Fanout.Receiver.Management", "RabbitMq.Fanout.Receiver.Management\RabbitMq.Fanout.Receiver.Management.csproj", "{FE1934CE-E0B2-4AB6-BB6C-012EBD31F64A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMq.Rpc.Receiver", "RabbitMq.Rpc.Receiver\RabbitMq.Rpc.Receiver.csproj", "{EDFD684E-1155-4D09-9BD7-45D2EB305B9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{FE1934CE-E0B2-4AB6-BB6C-012EBD31F64A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE1934CE-E0B2-4AB6-BB6C-012EBD31F64A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE1934CE-E0B2-4AB6-BB6C-012EBD31F64A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDFD684E-1155-4D09-9BD7-45D2EB305B9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDFD684E-1155-4D09-9BD7-45D2EB305B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDFD684E-1155-4D09-9BD7-45D2EB305B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDFD684E-1155-4D09-9BD7-45D2EB305B9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
