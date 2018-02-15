@@ -15,11 +15,46 @@ namespace RabbitMqApp1
             var channel = connection.CreateModel();
             Console.WriteLine($"Channel open: {channel.IsOpen }");
 
-            SetupRpc(channel);
+            SetupDirectExchangeWithRoutingKey(connection, channel);
 
             Console.WriteLine(string.Concat("Channel is closed: ", channel.IsClosed));
             Console.WriteLine("Main done...");
             Console.ReadKey();
+        }
+
+
+        static void SetupDirectExchangeWithRoutingKey(IConnection connection, IModel channel)
+        {
+
+
+            channel.ExchangeDeclare("pt.southbank.routing.exchange", ExchangeType.Direct, true, false, null);
+            channel.QueueDeclare("pt.southbank.routing.queue", true, false, false, null);
+            channel.QueueDeclare("pt.southbank.routing.other", true, false, false, null);
+            channel.QueueBind("pt.southbank.routing.queue", "pt.southbank.routing.exchange", "asia");
+            channel.QueueBind("pt.southbank.routing.queue", "pt.southbank.routing.exchange", "americas");
+            channel.QueueBind("pt.southbank.routing.queue", "pt.southbank.routing.exchange", "europe");
+            channel.QueueBind("pt.southbank.routing.other", "pt.southbank.routing.exchange", "australia");
+
+            var properties = channel.CreateBasicProperties();
+            properties.Persistent = true;
+            properties.ContentType = "text/plain";
+            var address = new PublicationAddress(ExchangeType.Direct, "pt.southbank.routing.exchange", "asia");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("The latest news from Asia!"));
+
+            address = new PublicationAddress(ExchangeType.Direct, "pt.southbank.routing.exchange", "europe");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("The latest news from Europe!"));
+
+            address = new PublicationAddress(ExchangeType.Direct, "pt.southbank.routing.exchange", "americas");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("The latest news from the Americas!"));
+
+            address = new PublicationAddress(ExchangeType.Direct, "pt.southbank.routing.exchange", "africa");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("The latest news from Africa!"));
+
+            address = new PublicationAddress(ExchangeType.Direct, "pt.southbank.routing.exchange", "australia");
+            channel.BasicPublish(address, properties, Encoding.UTF8.GetBytes("The latest news from Australia!"));
+
+            channel.Close();
+            connection.Close();
         }
 
 

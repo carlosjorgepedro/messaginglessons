@@ -35,7 +35,7 @@ namespace RabbitMq.OneWayMessage.Receiver
             var channel = connection.CreateModel();
             channel.BasicQos(0, 1, false);
             var basicConsumer = new OneWayMessageReceiver(channel);
-            channel.BasicConsume("my.first.queue", false, basicConsumer);
+            channel.BasicConsume("pt.southbank.routing.queue", false, basicConsumer);
         }
 
         static void ReceiveMessageWithEvents()
