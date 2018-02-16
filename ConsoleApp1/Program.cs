@@ -23,6 +23,42 @@ namespace RabbitMqApp1
             Console.ReadKey();
         }
 
+        static void SendScatterGatherMessages(IConnection connection, IModel channel, int minResponses)
+        {
+            var responses = new List<string>();
+            var rpcResponseQueue = channel.QueueDeclare().QueueName;
+            var correlationId = Guid.NewGuid().ToString();
+
+            var basicProperties = channel.CreateBasicProperties();
+            basicProperties.ReplyTo = rpcResponseQueue;
+            basicProperties.CorrelationId = correlationId;
+            Console.WriteLine("Enter your message and press Enter.");
+
+            var message = Console.ReadLine();
+            var messageBytes = Encoding.UTF8.GetBytes(message);
+            channel.BasicPublish("mycompany.exchanges.scattergather", "", basicProperties, messageBytes);
+
+            var scatterGatherEventingBasicConsumer = new EventingBasicConsumer(channel);
+            scatterGatherEventingBasicConsumer.Received += (sender, basicDeliveryEventArgs) =>
+            {
+                var props = basicDeliveryEventArgs.BasicProperties;
+                channel.BasicAck(basicDeliveryEventArgs.DeliveryTag, false);
+                if (props != null && props.CorrelationId == correlationId)
+                {
+                    var response = Encoding.UTF8.GetString(basicDeliveryEventArgs.Body);
+                    Console.WriteLine("Response: {0}", response);
+                    responses.Add(response);
+                    if (responses.Count >= minResponses)
+                    {
+                        Console.WriteLine(string.Concat("Responses received from consumers: ", string.Join(Environment.NewLine, responses)));
+                        channel.Close();
+                        connection.Close();
+                    }
+                }
+            };
+            channel.BasicConsume(rpcResponseQueue, false, scatterGatherEventingBasicConsumer);
+        }
+
         static void SetHeadersExchange(IConnection connection, IModel channel)
         {
             const string queue = "pt.southbank.queue.headers";
@@ -84,7 +120,6 @@ namespace RabbitMqApp1
 
         }
 
-
         static void SetupDirectExchangeWithRoutingKey(IConnection connection, IModel channel)
         {
 
@@ -119,14 +154,11 @@ namespace RabbitMqApp1
             connection.Close();
         }
 
-
-
         static void SetupRpc(IModel channel)
         {
             channel.QueueDeclare("pt.southbank.queues.rpc", true, false, false, null);
             SendRpcMessagesBankAndForth(channel);
         }
-
 
         static void SendRpcMessagesBankAndForth(IModel channel)
         {
@@ -161,10 +193,6 @@ namespace RabbitMqApp1
             channel.BasicConsume(rpcResponseQueue, false, rpcConsumer);
         }
 
-
-
-
-
         static void SetupFanoutExchange(IConnection connection, IModel channel)
         {
 
@@ -186,7 +214,6 @@ namespace RabbitMqApp1
             channel.Close();
             connection.Close();
         }
-
 
         static IConnection GetConnection()
         {
